@@ -21,7 +21,7 @@ Run the bot using::
 """
 
 import os
-import logging
+from loguru import logger
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -43,16 +43,19 @@ from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 from pipecat.workers.runner import WorkerRunner
 from pipecat.services.openai.llm import OpenAILLMService
-from tools import (get_current_location, get_current_weather, open_window, launch_app)
-
-logging.basicConfig(
-    level="INFO",
-    format="[%(levelname)s]: %(asctime)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+from tools import (get_current_date, get_current_location, get_weather, open_window, launch_app, general_web_search)
 
 load_dotenv(override=True)
 
+def build_tools_list():
+    return [
+        get_current_date,
+        get_current_location,
+        get_weather,
+        open_window,
+        launch_app,
+        general_web_search
+    ]
 
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> None:
     """Run the voice bot for this session.
@@ -78,20 +81,20 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     )
 
     # LLM service
-    logging.info(f'OpenAI base url: {os.getenv("OPENAI_BASE_URL")}')
-    logging.info(f'OpenAI model: {os.getenv("OPENAI_MODEL")}')
+    logger.info(f'OpenAI base url: {os.getenv("OPENAI_BASE_URL")}')
+    logger.info(f'OpenAI model: {os.getenv("OPENAI_MODEL")}')
 
     llm = OpenAILLMService(
         api_key=os.getenv("OPENAI_API_KEY"),
         base_url=os.getenv("OPENAI_BASE_URL"),
         settings=OpenAILLMService.Settings(
             model=os.getenv("OPENAI_LLM_MODEL", "step-3.7-flash"),
-            system_instruction="You are a vehicle voice assistant. Your reply shall be concise."
+            system_instruction="You are a vehicle voice assistant. You shall always refer to use the tools other than use your built-in knowledge. Your reply shall be concise."
         )
     )
 
     context = LLMContext(
-        tools=[get_current_location, get_current_weather, open_window, launch_app]
+        tools=build_tools_list()
     )
 
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
