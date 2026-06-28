@@ -43,7 +43,7 @@ from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 from pipecat.workers.runner import WorkerRunner
 from pipecat.services.openai.llm import OpenAILLMService
-from tools import (get_current_location, get_current_weather, open_window)
+from tools import (get_current_location, get_current_weather, open_window, launch_app)
 
 logging.basicConfig(
     level="INFO",
@@ -91,7 +91,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     )
 
     context = LLMContext(
-        tools=[get_current_location, get_current_weather, open_window]
+        tools=[get_current_location, get_current_weather, open_window, launch_app]
     )
 
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
