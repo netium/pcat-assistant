@@ -92,6 +92,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
             system_instruction="You are a vehicle voice assistant. You shall always refer to use the tools other than use your built-in knowledge. Your reply shall be concise."
         )
     )
+    llm.supports_developer_role = False  # Disable developer role for LLM service
 
     context = LLMContext(
         tools=build_tools_list()
