@@ -5,15 +5,15 @@ description = "Voice AI bot built with Pipecat"
 requires-python = ">=3.11"
 dependencies = [
     "loguru>=0.7.3",
-    "pipecat-ai[cartesia,daily,deepgram,openai,runner,silero,webrtc]>=1.4.0",
+    "pipecat-ai[cartesia,daily,deepgram,openai,runner,silero,webrtc]>=1.12.0",
     "pipecatcloud",
-    "tavily-python>=0.7.26",
+    "tavily-python>=0.8.5",
 ]
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.404,<2",
-    "ruff>=0.12.11,<1",
+    "pyright>=1.1.414,<2",
+    "ruff>=0.17.0,<1",
 ]
 
 [tool.ruff]
