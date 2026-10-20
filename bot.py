@@ -44,6 +44,12 @@ from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.daily.transport import DailyParams
 from pipecat.workers.runner import WorkerRunner
 from pipecat.services.openai.llm import OpenAILLMService
+from pipecat.turns.user_start import (
+    KrispVivaIPUserTurnStartStrategy,
+    TranscriptionUserTurnStartStrategy,
+)
+from pipecat.turns.user_turn_strategies import UserTurnStrategies
+
 from tools import (get_current_date, get_current_location, get_weather, open_window, launch_app, general_web_search)
 
 load_dotenv(override=True)
@@ -72,6 +78,21 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
 
     # Speech-to-Text service
     stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
+
+    # Setup turn start detection strategy
+    #strategy = KrispVivalIPUserTurnStartStrategy(
+    #    model_path=os.getenv("KRISP_VIVA_IP_MODEL_PATH"),
+    #    threshold=0.5
+    #)
+
+    user_turn_strategies = UserTurnStrategies(
+        start=[
+    #        strategy,
+            TranscriptionUserTurnStartStrategy(), # As fallback
+        ]
+    )
+
+    vad_analyzer = SileroVADAnalyzer()
 
     # Text-to-Speech service
     tts = CartesiaTTSService(
@@ -102,7 +123,8 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
-            vad_analyzer=SileroVADAnalyzer(),
+            vad_analyzer=vad_analyzer,
+            user_turn_strategies=user_turn_strategies
         ),
     )
 
