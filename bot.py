@@ -49,6 +49,10 @@ from pipecat.turns.user_start import (
     TranscriptionUserTurnStartStrategy,
 )
 from pipecat.turns.user_turn_strategies import UserTurnStrategies
+from pipecat.audio.vad.silero import SileroVADAnalyzer
+from pipecat.audio.vad.vad_analyzer import VADParams
+from pipecat.services.whisper.stt import WhisperSTTServiceMLX
+from pipecat.transcriptions.language import Language
 
 from tools import (get_current_date, get_current_location, get_weather, open_window, launch_app, general_web_search)
 
@@ -77,7 +81,11 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     logger.info("Starting bot")
 
     # Speech-to-Text service
-    stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
+    # stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
+    stt = create_local_whisper_mlx_stt_service()
+    #print(f"Now warming up the local Whisper STT MLX service...")
+    #warm_up_local_whisper_mlx_stt_service(stt)
+    #print(f"Local Whisper STT MLX service warmed up successfully.")
 
     # Setup turn start detection strategy
     #strategy = KrispVivalIPUserTurnStartStrategy(
@@ -92,15 +100,16 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         ]
     )
 
-    vad_analyzer = SileroVADAnalyzer()
+    vad_analyzer = SileroVADAnalyzer(params=VADParams(stop_secs=0.2)) 
 
     # Text-to-Speech service
-    tts = CartesiaTTSService(
-        api_key=os.getenv("CARTESIA_API_KEY"),
-        settings=CartesiaTTSService.Settings(
-            voice=os.getenv("CARTESIA_VOICE_ID", "71a7ad14-091c-4e8e-a314-022ece01c121"),
-        ),
-    )
+    #tts = CartesiaTTSService(
+    #    api_key=os.getenv("CARTESIA_API_KEY"),
+    #    settings=CartesiaTTSService.Settings(
+    #        voice=os.getenv("CARTESIA_VOICE_ID", "71a7ad14-091c-4e8e-a314-022ece01c121"),
+    #    ),
+    #)
+    tts = create_local_pocket_tts_service()
 
     # LLM service
     logger.info(f'OpenAI base url: {os.getenv("OPENAI_BASE_URL")}')
@@ -111,7 +120,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         base_url=os.getenv("OPENAI_BASE_URL"),
         settings=OpenAILLMService.Settings(
             model=os.getenv("OPENAI_LLM_MODEL", "step-3.7-flash"),
-            system_instruction="You are a vehicle voice assistant. You shall always refer to use the tools other than use your built-in knowledge. Your reply shall be concise."
+            system_instruction="You are a personal voice assistant. You shall always refer to use the tools other than use your built-in knowledge. Your reply shall be concise."
         )
     )
     llm.supports_developer_role = False  # Disable developer role for LLM service
@@ -191,6 +200,36 @@ async def bot(runner_args: RunnerArguments):
 
     await run_bot(transport, runner_args)
 
+def create_local_pocket_tts_service():
+    from pipecat.services.pocket_tts.tts import PocketTTSService
+
+    tts = PocketTTSService(
+        settings=PocketTTSService.Settings(
+            voice="alba",
+        )
+    )
+
+    return tts
+
+def create_local_whisper_mlx_stt_service() -> WhisperSTTServiceMLX:
+    """Create a local Whisper STT MLX service instance."""
+
+    MODEL = os.getenv("WHISPER_MLX_MODEL_PATH", "mlx-community/whisper-large-v3-turbo")
+
+    return WhisperSTTServiceMLX(
+        settings = WhisperSTTServiceMLX.Settings(
+            model = MODEL,
+            language = Language.EN,
+            temperature = 0.0
+        )
+    )
+
+def warm_up_local_whisper_mlx_stt_service(stt: WhisperSTTServiceMLX) -> None:
+    """Warm up the local Whisper STT MLX service by running a dummy transcription."""
+
+    # Run a dummy transcription to warm up the model
+    dummy_audio = b"\x00" * 16000  # 1 second of silence at 16kHz
+    stt.run_stt(dummy_audio)
 
 if __name__ == "__main__":
     from pipecat.runner.run import main
