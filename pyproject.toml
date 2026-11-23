@@ -5,6 +5,10 @@ description = "Voice AI bot built with Pipecat"
 requires-python = ">=3.11"
 dependencies = [
     "loguru>=0.7.3",
+    "mlx>=0.32.3; platform_system == 'Darwin'",
+    "mlx-audio==0.4.7; platform_system == 'Darwin'",
+    "mlx-lm==0.31.3; platform_system == 'Darwin'",
+    "mlx-metal==0.32.3; platform_system == 'Darwin'",
     "pipecat-ai[cartesia,daily,deepgram,mlx-whisper,mlx-whisper-whisper,nvidia,openai,pocket-tts,runner,silero,webrtc,whisper]>=1.12.0",
     "pipecatcloud",
     "tavily-python>=0.8.5",
